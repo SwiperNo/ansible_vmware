@@ -27,7 +27,6 @@
         name: "{{ item }}"
       loop: "{{ vm_names_list }}"
       register: vm_info
-      delegate_to: localhost
 
     - name: Set facts for VM folders
       ansible.builtin.set_fact:
@@ -57,4 +56,3 @@
       loop: "{{ vm_names_with_folders }}"
       loop_control:
         loop_var: item
-      delegate_to: localhost
