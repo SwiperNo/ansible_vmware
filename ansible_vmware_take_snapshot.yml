@@ -44,7 +44,7 @@
         hostname: '{{ lookup("env", "VMWARE_HOST") }}'
         username: '{{ lookup("env", "VMWARE_USER") }}'
         password: '{{ lookup("env", "VMWARE_PASSWORD") }}'
-        datacenter: "{{ datacenter_name }}"
+        datacenter: '{{ lookup("env", "VMWARE_DATACENTER") }}'
         validate_certs: no
         name: "{{ item.name }}"
         folder: "{{ item.folder }}"
