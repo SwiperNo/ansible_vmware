@@ -1,0 +1,60 @@
+---
+- name: Find VMs and take snapshots
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    snapshot_suffix: "Ansible-Snapshot"
+    snapshot_description: "Snapshot created by Ansible"
+
+  tasks:
+
+    - name: Convert vm_names input to list
+      ansible.builtin.set_fact:
+        vm_names_list: "{{ vm_names | split(',') | map('trim') | list }}"
+
+    - name: Check the vm_names_list
+      ansible.builtin.debug:
+        var: vm_names_list
+
+    - name: Find VM details
+      community.vmware.vmware_guest_info:
+        hostname: '{{ lookup("env", "VMWARE_HOST") }}'
+        username: '{{ lookup("env", "VMWARE_USER") }}'
+        password: '{{ lookup("env", "VMWARE_PASSWORD") }}'
+        datacenter: '{{ lookup("env", "VMWARE_DATACENTER") }}'
+        validate_certs: no
+        name: "{{ item }}"
+      loop: "{{ vm_names_list }}"
+      register: vm_info
+      delegate_to: localhost
+
+    - name: Set facts for VM folders
+      ansible.builtin.set_fact:
+        vm_names_with_folders: "{{ vm_names_with_folders | default([]) + [{'name': item.instance.hw_name, 'folder': item.instance.hw_folder}] }}"
+      loop: "{{ vm_info.results }}"
+      loop_control:
+        loop_var: item
+
+    - name: Check the vm_names_with_folders
+      ansible.builtin.debug:
+        var: vm_names_with_folders
+
+    - name: Find and snapshot VMs
+      community.vmware.vmware_guest_snapshot:
+        hostname: '{{ lookup("env", "VMWARE_HOST") }}'
+        username: '{{ lookup("env", "VMWARE_USER") }}'
+        password: '{{ lookup("env", "VMWARE_PASSWORD") }}'
+        datacenter: "{{ datacenter_name }}"
+        validate_certs: no
+        name: "{{ item.name }}"
+        folder: "{{ item.folder }}"
+        state: present
+        snapshot_name: "{{ item.name }}_{{ snapshot_suffix }}"
+        description: "{{ snapshot_description }}"
+        memory_dump: true
+        quiesce: false
+      loop: "{{ vm_names_with_folders }}"
+      loop_control:
+        loop_var: item
+      delegate_to: localhost
